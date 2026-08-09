@@ -1,0 +1,23 @@
+{
+  "name": "sandrone",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sandrone.js",
+  "scripts": {
+    "cmd:start": "node --env-file=.env sandrone.js",
+    "cmd:deploy": "node --env-file=.env deploy_cmds.js"
+  },
+  "keywords": [],
+  "author": "TukanDev",
+  "license": "MIT",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.3.0",
+      "onFail": "download"
+    }
+  },
+  "dependencies": {
+    "discord.js": "^14.27.0"
+  }
+}
