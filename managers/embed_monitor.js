@@ -6,7 +6,9 @@ const { types } = require('../embeds');
 const MIN_REFRESH_SECONDS = 10;
 const FATAL_EDIT_CODES = [10003, 10008, 50001, 50013];
 const STATE_FILE = path.join(__dirname, '..', 'data', 'monitors.json');
+const RESTORE_RETRY_SECONDS = 60;
 const monitors = new Map();
+const pending = new Map();
 const cache = new Map();
 
 const clampRefresh = (type) => Math.max(type.refresh ?? 60, MIN_REFRESH_SECONDS);
@@ -37,6 +39,7 @@ async function getData(type, ctx, { maxAge = 0 } = {}) {
 
 function persist() {
     const records = [...monitors].map(([messageId, m]) => ({ messageId, channelId: m.channelId, typeName: m.typeName, pageIndex: m.pageIndex }));
+    for (const [messageId, record] of pending) { if (!monitors.has(messageId)) { records.push(record); } }
     try {
         fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
         fs.writeFileSync(STATE_FILE, JSON.stringify(records, null, 4));
@@ -83,11 +86,12 @@ function buildPayload(type, pageIndex, ctx, { paused = false, entry = null } = {
 
 function stop(messageId, { save = true } = {}) {
     const monitor = monitors.get(messageId);
+    const wasPending = pending.delete(messageId);
     if (monitor) {
         clearInterval(monitor.timer);
         monitors.delete(messageId);
-        if (save) { persist(); }
     }
+    if ((monitor || wasPending) && save) { persist(); }
 }
 
 function start({ channelId, messageId }, type, pageIndex, client, { save = true, immediate = false } = {}) {
@@ -112,19 +116,31 @@ function start({ channelId, messageId }, type, pageIndex, client, { save = true,
     if (immediate) { return tick(); }
 }
 
-async function restore(client) {
-    for (const record of readState()) {
+async function retryPending(client) {
+    for (const [messageId, record] of pending) {
         const type = types.get(record.typeName);
-        if (!type) { continue; }
+        if (!type || monitors.has(messageId)) {
+            pending.delete(messageId);
+            continue;
+        }
         try {
             const channel = await client.channels.fetch(record.channelId);
-            await channel.messages.fetch(record.messageId);
+            await channel.messages.fetch(messageId);
             await start(record, type, record.pageIndex % type.pages.length, client, { save: false, immediate: true });
         } catch (error) {
-            if (!FATAL_EDIT_CODES.includes(error.code)) { console.error(error); }
+            if (FATAL_EDIT_CODES.includes(error.code)) { pending.delete(messageId); } else { console.error(error); }
         }
     }
     persist();
+    if (pending.size) {
+        console.error(`[embed_monitor] ${pending.size} saved monitor(s) unreachable, retrying in ${RESTORE_RETRY_SECONDS}s.`);
+        setTimeout(() => retryPending(client), RESTORE_RETRY_SECONDS * 1_000);
+    }
+}
+
+async function restore(client) {
+    for (const record of readState()) { pending.set(record.messageId, record); }
+    await retryPending(client);
     if (monitors.size) { console.log(`Restored ${monitors.size} embed monitor(s).`); }
 }
 
