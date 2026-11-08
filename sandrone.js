@@ -28,4 +28,7 @@ for (const file of eventFiles) {
     if (event.once) { client.once(event.name, (...args) => event.execute(...args)); } else { client.on(event.name, (...args) => event.execute(...args)); }
 }
 
+process.on('unhandledRejection', (error) => console.error('[sandrone] unhandled rejection:', error));
+client.on('error', (error) => console.error('[sandrone] client error:', error));
+
 client.login(process.env.DISCORD_TOKEN).catch(console.error);
