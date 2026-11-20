@@ -49,6 +49,7 @@ function logEmbed(result, attachment) {
 
 module.exports = {
     cooldown: 15,
+    developer: false,
     data: new SlashCommandBuilder().setName('analyze').setDescription('Analyzes a Unity or Unreal crash file, or decrypts a Wuthering Waves log.')
         .addStringOption((option) => option.setName('type').setDescription('What kind of file you are uploading.').setRequired(true).addChoices(...Object.entries(TYPES).map(([value, name]) => ({ name: clip(name, 100), value }))))
         .addStringOption((option) => option.setName('engine').setDescription('The engine the game is made with.').setRequired(true).addChoices({ name: 'Unity (2017 and newer)', value: 'unity' }, { name: 'Unreal Engine (4 or 5)', value: 'unreal' }))

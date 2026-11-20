@@ -2,7 +2,7 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 client.cooldowns = new Collection();
 client.commands = new Collection();
 
@@ -27,6 +27,9 @@ for (const file of eventFiles) {
     const event = require(filePath);
     if (event.once) { client.once(event.name, (...args) => event.execute(...args)); } else { client.on(event.name, (...args) => event.execute(...args)); }
 }
+
+require('./managers/linked_roles').start();
+require('./utils/web').start();
 
 process.on('unhandledRejection', (error) => console.error('[sandrone] unhandled rejection:', error));
 client.on('error', (error) => console.error('[sandrone] client error:', error));

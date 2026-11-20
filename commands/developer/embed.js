@@ -11,7 +11,6 @@ module.exports = {
         const type = types.get(interaction.options.getString('type', true));
         if (!type) { return interaction.reply({ content: 'Unknown embed type.', flags: MessageFlags.Ephemeral }); }
 
-        // Deferred because the type's first fetch may outlast the 3s reply window.
         await interaction.deferReply();
         const ctx = { client: interaction.client, guild: interaction.guild };
         const entry = await getData(type, ctx, { maxAge: 0 });
