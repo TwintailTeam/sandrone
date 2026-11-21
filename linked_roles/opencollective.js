@@ -13,7 +13,7 @@ module.exports = {
     authorizeUrl: ({ redirectUri, state, challenge }) => `${OAUTH}/authorize?${new URLSearchParams({ client_id: process.env.OPENCOLLECTIVE_CLIENT_ID, response_type: 'code', redirect_uri: redirectUri, state, code_challenge: challenge, code_challenge_method: 'S256' })}`,
     async identify({ code, redirectUri, verifier }) {
         const res = await fetch(`${OAUTH}/token`, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'Sandrone' }, body: new URLSearchParams({ grant_type: 'authorization_code', client_id: process.env.OPENCOLLECTIVE_CLIENT_ID, client_secret: process.env.OPENCOLLECTIVE_CLIENT_SECRET, code, redirect_uri: redirectUri, code_verifier: verifier }), signal: AbortSignal.timeout(15_000) });
-        if (!res.ok) { throw new Error(`Open Collective token exchange returned HTTP ${res.status}`); }
+        if (!res.ok) { throw new Error(`Open Collective token exchange returned HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`); }
         const { me } = await graphql('{ me { id slug } }', {}, { Authorization: `Bearer ${(await res.json()).access_token}` }, 'https://opencollective.com/api/graphql/v2');
         if (!me?.id) { throw new Error('Open Collective did not return the signed-in account'); }
         return { id: me.id, username: me.slug };

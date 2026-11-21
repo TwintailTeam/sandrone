@@ -147,7 +147,7 @@ function registerRoutes() {
             const current = session(req);
             if (!current) { return page(res, 'Session expired', null, 'Open the linked role link from Discord again first.'); }
             const state = randomToken();
-            const verifier = randomToken();
+            const verifier = crypto.randomBytes(48).toString('base64url');
             flows.set(state, { created: Date.now(), userId: current.userId, platform: platform.name, verifier });
             redirect(res, platform.authorizeUrl({ redirectUri, state, challenge: crypto.createHash('sha256').update(verifier).digest('base64url') }));
         });

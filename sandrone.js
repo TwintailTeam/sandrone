@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+
 client.cooldowns = new Collection();
 client.commands = new Collection();
 
